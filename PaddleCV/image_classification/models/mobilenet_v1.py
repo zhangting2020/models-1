@@ -39,8 +39,9 @@ class MobileNetV1():
             channels=3,
             num_filters=int(32 * scale),
             stride=2,
-            padding=1,
-            name="conv1")
+            padding='SAME',
+            name="conv1",
+            data_format='NCHW')
 
         # 56x56
         input = self.depthwise_separable(
@@ -50,7 +51,8 @@ class MobileNetV1():
             num_groups=32,
             stride=1,
             scale=scale,
-            name="conv2_1")
+            name="conv2_1",
+            data_format='NCHW')
 
         input = self.depthwise_separable(
             input,
@@ -59,7 +61,8 @@ class MobileNetV1():
             num_groups=64,
             stride=2,
             scale=scale,
-            name="conv2_2")
+            name="conv2_2",
+            data_format='NCHW')
 
         # 28x28
         input = self.depthwise_separable(
@@ -69,7 +72,8 @@ class MobileNetV1():
             num_groups=128,
             stride=1,
             scale=scale,
-            name="conv3_1")
+            name="conv3_1",
+            data_format='NCHW')
 
         input = self.depthwise_separable(
             input,
@@ -78,7 +82,8 @@ class MobileNetV1():
             num_groups=128,
             stride=2,
             scale=scale,
-            name="conv3_2")
+            name="conv3_2",
+            data_format='NCHW')
 
         # 14x14
         input = self.depthwise_separable(
@@ -88,7 +93,8 @@ class MobileNetV1():
             num_groups=256,
             stride=1,
             scale=scale,
-            name="conv4_1")
+            name="conv4_1",
+            data_format='NCHW')
 
         input = self.depthwise_separable(
             input,
@@ -97,7 +103,8 @@ class MobileNetV1():
             num_groups=256,
             stride=2,
             scale=scale,
-            name="conv4_2")
+            name="conv4_2",
+            data_format='NCHW')
 
         # 14x14
         for i in range(5):
@@ -108,7 +115,8 @@ class MobileNetV1():
                 num_groups=512,
                 stride=1,
                 scale=scale,
-                name="conv5" + "_" + str(i + 1))
+                name="conv5" + "_" + str(i + 1),
+                data_format='NCHW')
         # 7x7
         input = self.depthwise_separable(
             input,
@@ -117,7 +125,8 @@ class MobileNetV1():
             num_groups=512,
             stride=2,
             scale=scale,
-            name="conv5_6")
+            name="conv5_6",
+            data_format='NCHW')
 
         input = self.depthwise_separable(
             input,
@@ -126,10 +135,11 @@ class MobileNetV1():
             num_groups=1024,
             stride=1,
             scale=scale,
-            name="conv6")
+            name="conv6",
+            data_format='NCHW')
 
         input = fluid.layers.pool2d(
-            input=input, pool_type='avg', global_pooling=True)
+            input=input, pool_type='avg', global_pooling=True, pool_padding='VALID', data_format='NCHW')
 
         output = fluid.layers.fc(input=input,
                                  size=class_dim,
@@ -148,7 +158,8 @@ class MobileNetV1():
                       num_groups=1,
                       act='relu',
                       use_cudnn=True,
-                      name=None):
+                      name=None,
+                      data_format='NCHW'):
         conv = fluid.layers.conv2d(
             input=input,
             num_filters=num_filters,
@@ -160,7 +171,8 @@ class MobileNetV1():
             use_cudnn=use_cudnn,
             param_attr=ParamAttr(
                 initializer=MSRA(), name=name + "_weights"),
-            bias_attr=False)
+            bias_attr=False,
+            data_format=data_format)
         bn_name = name + "_bn"
         return fluid.layers.batch_norm(
             input=conv,
@@ -168,7 +180,8 @@ class MobileNetV1():
             param_attr=ParamAttr(name=bn_name + "_scale"),
             bias_attr=ParamAttr(name=bn_name + "_offset"),
             moving_mean_name=bn_name + '_mean',
-            moving_variance_name=bn_name + '_variance')
+            moving_variance_name=bn_name + '_variance',
+            data_layout=data_format)
 
     def depthwise_separable(self,
                             input,
@@ -177,24 +190,27 @@ class MobileNetV1():
                             num_groups,
                             stride,
                             scale,
-                            name=None):
+                            name=None,
+                            data_format='NCHW'):
         depthwise_conv = self.conv_bn_layer(
             input=input,
             filter_size=3,
             num_filters=int(num_filters1 * scale),
             stride=stride,
-            padding=1,
+            padding='SAME',
             num_groups=int(num_groups * scale),
             use_cudnn=False,
-            name=name + "_dw")
+            name=name + "_dw",
+            data_format=data_format)
 
         pointwise_conv = self.conv_bn_layer(
             input=depthwise_conv,
             filter_size=1,
             num_filters=int(num_filters2 * scale),
             stride=1,
-            padding=0,
-            name=name + "_sep")
+            padding='SAME',
+            name=name + "_sep",
+            data_format=data_format)
         return pointwise_conv
 
 

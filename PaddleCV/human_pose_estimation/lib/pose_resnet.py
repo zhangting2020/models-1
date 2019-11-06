@@ -68,6 +68,7 @@ class ResNet():
                     num_filters=num_filters[block],
                     stride=2 if i == 0 and block != 0 else 1)
 
+        conv = fluid.layers.transpose(conv, [0, 2, 3, 1])
         conv = fluid.layers.conv2d_transpose(
                 input=conv, num_filters=256,
                 filter_size=4,
@@ -76,8 +77,9 @@ class ResNet():
                 param_attr=fluid.param_attr.ParamAttr(
                     initializer=fluid.initializer.Normal(0., 0.001)),
                 act=None,
-                bias_attr=False)
-        conv = fluid.layers.batch_norm(input=conv, act='relu', momentum=BN_MOMENTUM)
+                bias_attr=False,
+                data_format='NHWC')
+        conv = fluid.layers.batch_norm(input=conv, act='relu', momentum=BN_MOMENTUM, data_layout='NHWC')
         conv = fluid.layers.conv2d_transpose(
                 input=conv, num_filters=256,
                 filter_size=4,
@@ -86,8 +88,9 @@ class ResNet():
                 param_attr=fluid.param_attr.ParamAttr(
                     initializer=fluid.initializer.Normal(0., 0.001)),
                 act=None,
-                bias_attr=False)
-        conv = fluid.layers.batch_norm(input=conv, act='relu', momentum=BN_MOMENTUM)
+                bias_attr=False,
+                data_format='NHWC')
+        conv = fluid.layers.batch_norm(input=conv, act='relu', momentum=BN_MOMENTUM, data_layout='NHWC')
         conv = fluid.layers.conv2d_transpose(
                 input=conv, num_filters=256,
                 filter_size=4,
@@ -96,8 +99,10 @@ class ResNet():
                 param_attr=fluid.param_attr.ParamAttr(
                     initializer=fluid.initializer.Normal(0., 0.001)),
                 act=None,
-                bias_attr=False)
-        conv = fluid.layers.batch_norm(input=conv, act='relu', momentum=BN_MOMENTUM)
+                bias_attr=False,
+                data_format='NHWC')
+        conv = fluid.layers.batch_norm(input=conv, act='relu', momentum=BN_MOMENTUM, data_layout='NHWC')
+        conv = fluid.layers.transpose(conv, [0, 3, 1, 2])
 
         out = fluid.layers.conv2d(
                 input=conv,

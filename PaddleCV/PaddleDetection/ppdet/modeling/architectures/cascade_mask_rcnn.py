@@ -316,11 +316,12 @@ class CascadeMaskRCNN(object):
             bbox_pred = bbox_pred['bbox']
 
         # share weight
-        bbox_shape = fluid.layers.shape(bbox_pred)
-        bbox_size = fluid.layers.reduce_prod(bbox_shape)
-        bbox_size = fluid.layers.reshape(bbox_size, [1, 1])
-        size = fluid.layers.fill_constant([1, 1], value=6, dtype='int32')
-        cond = fluid.layers.less_than(x=bbox_size, y=size)
+        with fluid.device_guard("cpu"):
+            bbox_shape = fluid.layers.shape(bbox_pred)
+            bbox_size = fluid.layers.reduce_prod(bbox_shape)
+            bbox_size = fluid.layers.reshape(bbox_size, [1, 1])
+            size = fluid.layers.fill_constant([1, 1], value=6, dtype='int32')
+            cond = fluid.layers.less_than(x=bbox_size, y=size)
 
         mask_pred = fluid.layers.create_global_var(
             shape=[1],

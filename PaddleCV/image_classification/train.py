@@ -201,8 +201,8 @@ def train(args):
     if args.use_dali:
         import dali
         train_iter = dali.train(settings=args)
-        if trainer_id == 0:
-            test_iter = dali.val(settings=args)
+        # if trainer_id == 0:
+        #     test_iter = dali.val(settings=args)
     else:
         imagenet_reader = reader.ImageNetReader(0 if num_trainers > 1 else None)
         train_reader = imagenet_reader.train(settings=args)
@@ -234,7 +234,6 @@ def train(args):
         train_batch_id = 0
         train_batch_time_record = []
         train_batch_metrics_record = []
-        train_batch_time_print_step = []
 
         if not args.use_dali:
             train_iter = train_data_loader()
@@ -244,8 +243,16 @@ def train(args):
         t1 = time.time()
         for batch in train_iter:
             #NOTE: this is for benchmark
-            if args.max_iter and total_batch_num == args.max_iter:
+            if total_batch_num == 200:
+            #if args.max_iter and total_batch_num == args.max_iter:
+                print("=" *20)
+                print("total_batch_num: ", total_batch_num, "records_num: ", len(train_batch_time_record))
+                avg_times = sum(train_batch_time_record[-150:]) / 150
+                avg_speed = args.batch_size / avg_times
+                print("average time: %.5f s/batch, average speed: %.5f imgs/s" % (avg_times, avg_speed))
                 return
+            
+            #print("total_batch_num: ", total_batch_num)
             train_batch_metrics = exe.run(compiled_train_prog,
                                           feed=batch,
                                           fetch_list=train_fetch_list)
@@ -257,19 +264,8 @@ def train(args):
                 np.array(train_batch_metrics), axis=1)
             train_batch_metrics_record.append(train_batch_metrics_avg)
             if trainer_id == 0:
-                if train_batch_id % args.print_step == 0:
-                    if len(train_batch_time_print_step) == 0:
-                        train_batch_time_print_step_avg = train_batch_elapse
-                    else:
-                        train_batch_time_print_step_avg = np.mean(
-                            train_batch_time_print_step)
-                    train_batch_time_print_step = []
-                    print_info("batch", train_batch_metrics_avg,
-                               train_batch_time_print_step_avg, pass_id,
-                               train_batch_id, args.print_step)
-                else:
-                    train_batch_time_print_step.append(train_batch_elapse)
-
+                print_info("batch", train_batch_metrics_avg, train_batch_elapse,
+                           pass_id, train_batch_id, args.print_step)
                 sys.stdout.flush()
             train_batch_id += 1
             t1 = time.time()

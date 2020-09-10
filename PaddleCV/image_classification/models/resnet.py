@@ -171,14 +171,16 @@ class ResNet():
             act='relu',
             name=name + "_branch2b",
             data_format=data_format)
-        conv2 = self.conv_bn_layer(
+        name = name + "_branch2c"
+        conv2 = fluid.layers.conv2d(
             input=conv1,
             num_filters=num_filters * 4,
             filter_size=1,
             act=None,
-            name=name + "_branch2c",
-            data_format=data_format)
-
+            param_attr=ParamAttr(name=name + "_weights"),
+            bias_attr=False,
+            name=name + '.conv2d.output.1',
+            data_format=data_format)    
         short = self.shortcut(
             input,
             num_filters * 4,
@@ -186,9 +188,14 @@ class ResNet():
             is_first=False,
             name=name + "_branch1",
             data_format=data_format)
-
-        return fluid.layers.elementwise_add(
-            x=short, y=conv2, act='relu', name=name + ".add.output.5")
+        bn_name = "bn" + name[3:]
+        short = fluid.contrib.layers.fused_bn_add_act(conv2, short,
+            param_attr=ParamAttr(name=bn_name + '_scale'),
+            bias_attr=ParamAttr(bn_name + '_offset'),
+            moving_mean_name=bn_name + '_mean',
+            moving_variance_name=bn_name + '_variance',
+            name=name + ".add.output.5")
+        return short
 
     def basic_block(self, input, num_filters, stride, is_first, name, data_format):
         conv0 = self.conv_bn_layer(
@@ -199,16 +206,28 @@ class ResNet():
             stride=stride,
             name=name + "_branch2a",
             data_format=data_format)
-        conv1 = self.conv_bn_layer(
+        name = name + "_branch2b"
+        conv1 = fluid.layers.conv2d(
             input=conv0,
             num_filters=num_filters,
             filter_size=3,
+            stride=1,
+            padding=1,
+            groups=1,
             act=None,
-            name=name + "_branch2b",
+            param_attr=ParamAttr(name=name + "_weights"),
+            bias_attr=False,
+            name=name + '.conv2d.output.1',
             data_format=data_format)
         short = self.shortcut(
             input, num_filters, stride, is_first, name=name + "_branch1", data_format=data_format)
-        return fluid.layers.elementwise_add(x=short, y=conv1, act='relu')
+        bn_name = "bn" + name[3:]
+        short = fluid.contrib.layers.fused_bn_add_act(conv1, short,
+            param_attr=ParamAttr(name=bn_name + '_scale'),
+            bias_attr=ParamAttr(bn_name + '_offset'),
+            moving_mean_name=bn_name + '_mean',
+            moving_variance_name=bn_name + '_variance')
+        return short
 
 
 def ResNet18():

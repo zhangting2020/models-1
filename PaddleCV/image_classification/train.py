@@ -29,6 +29,7 @@ import reader
 from utils import *
 import models
 from build_model import create_model
+import paddle.fluid.core as core
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -251,11 +252,25 @@ def train(args):
                 avg_speed = args.batch_size / avg_times
                 print("average time: %.5f s/batch, average speed: %.5f imgs/s" % (avg_times, avg_speed))
                 return
-            
-            #print("total_batch_num: ", total_batch_num)
+            if total_batch_num == 100:
+                print("=========== start profile===========")
+                #core.nvprof_start()
+                profiler.start_profiler("All", "OpDetail")
+            if total_batch_num == 110:
+                #core.nvprof_stop()
+                profiler.stop_profiler("total", "./profile")
+                print("=========== stop profile===========")
+                return
+            """
+            with profiler.cuda_profiler("res_amp") as prof:
+                train_batch_metrics = exe.run(compiled_train_prog,
+                                              feed=batch,
+                                              fetch_list=train_fetch_list)
+            """            
             train_batch_metrics = exe.run(compiled_train_prog,
                                           feed=batch,
                                           fetch_list=train_fetch_list)
+            
             t2 = time.time()
             train_batch_elapse = t2 - t1
             train_batch_time_record.append(train_batch_elapse)

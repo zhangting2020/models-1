@@ -4,7 +4,7 @@ export FLAGS_conv_workspace_size_limit=4000 #MB
 export FLAGS_cudnn_exhaustive_search=1
 export FLAGS_cudnn_batchnorm_spatial_persistent=1
 
-DATA_DIR="Your image dataset path, e.g. /work/datasets/ILSVRC2012/"
+DATA_DIR="/data/ILSVRC2012/"
 
 DATA_FORMAT="NHWC"
 USE_FP16=true #whether to use float16
@@ -17,7 +17,7 @@ fi
 python train.py \
        --model=ResNet50 \
        --data_dir=${DATA_DIR} \
-       --batch_size=256 \
+       --batch_size=128 \
        --total_images=1281167 \
        --image_shape 3 224 224 \
        --class_dim=1000 \
@@ -28,9 +28,9 @@ python train.py \
        --scale_loss=128.0 \
        --use_dynamic_loss_scaling=true \
        --data_format=${DATA_FORMAT} \
-       --fuse_elewise_add_act_ops=true \
+       --fuse_elewise_add_act_ops=false \
        --fuse_bn_act_ops=true \
-       --validate=true \
+       --validate=false \
        --is_profiler=false \
        --profiler_path=profile/ \
        --reader_thread=10 \

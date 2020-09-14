@@ -43,7 +43,8 @@ class HybridTrainPipe(Pipeline):
                  num_shards=1,
                  random_shuffle=True,
                  num_threads=4,
-                 seed=42):
+                 seed=42,
+                 use_fp16=False):
         super(HybridTrainPipe, self).__init__(
             batch_size, num_threads, device_id, seed=seed)
         self.input = ops.FileReader(
@@ -68,12 +69,14 @@ class HybridTrainPipe(Pipeline):
             device='gpu', resize_x=crop, resize_y=crop, interp_type=interp)
         self.cmnp = ops.CropMirrorNormalize(
             device="gpu",
+            #output_dtype=types.FLOAT16 if use_fp16 else types.FLOAT,
             output_dtype=types.FLOAT,
             output_layout=types.NCHW,
             crop=(crop, crop),
             image_type=types.RGB,
             mean=mean,
-            std=std)
+            std=std,
+            pad_output=False)
         self.coin = ops.CoinFlip(probability=0.5)
         self.to_int64 = ops.Cast(dtype=types.INT64, device="gpu")
 
@@ -148,6 +151,7 @@ def build(settings, mode='train'):
 
     file_root = settings.data_dir
     bs = settings.batch_size
+    use_fp16 = settings.use_fp16
     assert bs % paddle.fluid.core.get_cuda_device_count() == 0, \
         "batch size must be multiple of number of devices"
     batch_size = bs // paddle.fluid.core.get_cuda_device_count()
@@ -221,7 +225,8 @@ def build(settings, mode='train'):
             device_id,
             shard_id,
             num_shards,
-            seed=42 + shard_id)
+            seed=42 + shard_id,
+            use_fp16=use_fp16)
         pipe.build()
         pipelines = [pipe]
         sample_per_shard = len(pipe) // num_shards

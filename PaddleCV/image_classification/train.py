@@ -252,6 +252,7 @@ def train(args):
                 avg_speed = args.batch_size / avg_times
                 print("average time: %.5f s/batch, average speed: %.5f imgs/s" % (avg_times, avg_speed))
                 return
+            """
             if total_batch_num == 100:
                 print("=========== start profile===========")
                 #core.nvprof_start()
@@ -261,7 +262,7 @@ def train(args):
                 profiler.stop_profiler("total", "./profile")
                 print("=========== stop profile===========")
                 return
-            """
+            
             with profiler.cuda_profiler("res_amp") as prof:
                 train_batch_metrics = exe.run(compiled_train_prog,
                                               feed=batch,

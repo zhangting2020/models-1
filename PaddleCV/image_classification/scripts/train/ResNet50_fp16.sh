@@ -28,7 +28,7 @@ python train.py \
        --scale_loss=128.0 \
        --use_dynamic_loss_scaling=true \
        --data_format=${DATA_FORMAT} \
-       --fuse_elewise_add_act_ops=false \
+       --fuse_elewise_add_act_ops=true \
        --fuse_bn_act_ops=true \
        --validate=false \
        --is_profiler=false \

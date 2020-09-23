@@ -262,7 +262,7 @@ def train(args):
                 profiler.stop_profiler("total", "./profile")
                 print("=========== stop profile===========")
                 return
-            
+             
             with profiler.cuda_profiler("res_amp") as prof:
                 train_batch_metrics = exe.run(compiled_train_prog,
                                               feed=batch,

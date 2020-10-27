@@ -532,6 +532,7 @@ def best_strategy_compiled(args,
         try:
             fluid.require_version(min_version='1.7.0')
             build_strategy.fuse_bn_act_ops = args.fuse_bn_act_ops
+            build_strategy.fuse_all_optimizer_ops=True
         except Exception as e:
             logger.info(
                 "PaddlePaddle version 1.7.0 or higher is "

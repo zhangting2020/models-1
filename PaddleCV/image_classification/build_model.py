@@ -15,7 +15,6 @@ import paddle
 import paddle.fluid as fluid
 import utils.utility as utility
 
-
 def _calc_label_smoothing_loss(softmax_out, label, class_dim, epsilon):
     """Calculate label smoothing loss
 
@@ -35,7 +34,7 @@ def _calc_label_smoothing_loss(softmax_out, label, class_dim, epsilon):
 def _basic_model(data, model, args, is_train):
     image = data[0]
     label = data[1]
-    if args.model == "ResNet50":
+    if args.model == "ResNet50" or "EfficientNet":
         image_in = fluid.layers.transpose(
             image, [0, 2, 3, 1]) if args.data_format == 'NHWC' else image
         image_in.stop_gradient = image.stop_gradient

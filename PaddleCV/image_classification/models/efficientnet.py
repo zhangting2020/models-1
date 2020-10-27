@@ -114,7 +114,7 @@ class EfficientNet():
         self.padding_type = padding_type
         self.use_se = use_se
 
-    def net(self, input, class_dim=1000, is_test=False):
+    def net(self, input, class_dim=1000, is_test=False, data_format="NCHW"):
 
         conv = self.extract_features(input, is_test=is_test)
 
@@ -128,9 +128,10 @@ class EfficientNet():
                                   padding_type=self.padding_type,
                                   name='',
                                   conv_name='_conv_head',
-                                  bn_name='_bn1')
+                                  bn_name='_bn1',
+                                  data_format=data_format)
 
-        pool = fluid.layers.pool2d(input=conv, pool_type='avg', global_pooling=True, use_cudnn=False)
+        pool = fluid.layers.pool2d(input=conv, pool_type='avg', global_pooling=True, use_cudnn=False, data_format=data_format)
 
         if self._global_params.dropout_rate:
             pool = fluid.layers.dropout(pool, self._global_params.dropout_rate, dropout_implementation='upscale_in_train')
@@ -148,7 +149,7 @@ class EfficientNet():
         output = inputs / keep_prob * binary_tensor
         return output
 
-    def _expand_conv_norm(self, inputs, block_args, is_test, name=None):
+    def _expand_conv_norm(self, inputs, block_args, is_test, name=None, data_format="NCHW"):
         # Expansion phase
         oup = block_args.input_filters * block_args.expand_ratio  # number of output channels
 
@@ -162,11 +163,12 @@ class EfficientNet():
                                       padding_type=self.padding_type,
                                       name=name,
                                       conv_name=name + '_expand_conv',
-                                      bn_name='_bn0')
+                                      bn_name='_bn0',
+                                      data_format=data_format)
 
         return conv
 
-    def _depthwise_conv_norm(self, inputs, block_args, is_test, name=None):
+    def _depthwise_conv_norm(self, inputs, block_args, is_test, name=None, data_format="NCHW"):
         k = block_args.kernel_size
         s = block_args.stride
         if isinstance(s, list) or isinstance(s, tuple):
@@ -185,11 +187,12 @@ class EfficientNet():
                                   name=name,
                                   use_cudnn=False,
                                   conv_name=name + '_depthwise_conv',
-                                  bn_name='_bn1')
+                                  bn_name='_bn1',
+                                  data_format=data_format)
 
         return conv
 
-    def _project_conv_norm(self, inputs, block_args, is_test, name=None):
+    def _project_conv_norm(self, inputs, block_args, is_test, name=None, data_format="NCHW"):
         final_oup = block_args.output_filters
         conv = self.conv_bn_layer(inputs,
                                   num_filters=final_oup,
@@ -200,12 +203,13 @@ class EfficientNet():
                                   bn_eps=self._bn_eps,
                                   name=name,
                                   conv_name=name + '_project_conv',
-                                  bn_name='_bn2')
+                                  bn_name='_bn2',
+                                  data_format=data_format)
         return conv
 
     def conv_bn_layer(self, input, filter_size, num_filters, stride=1, num_groups=1, padding_type="SAME", conv_act=None,
                       bn_act='swish', use_cudnn=True, use_bn=True, bn_mom=0.9, bn_eps=1e-05, use_bias=False, name=None,
-                      conv_name=None, bn_name=None):
+                      conv_name=None, bn_name=None, data_format="NCHW"):
         conv = conv2d(
             input=input,
             num_filters=num_filters,
@@ -216,7 +220,8 @@ class EfficientNet():
             padding_type=padding_type,
             use_cudnn=use_cudnn,
             name=conv_name,
-            use_bias=use_bias)
+            use_bias=use_bias,
+            data_format=data_format)
 
         if use_bn == False:
             return conv
@@ -231,33 +236,34 @@ class EfficientNet():
                                            moving_mean_name=bn_name + '_mean',
                                            moving_variance_name=bn_name + '_variance',
                                            param_attr=param_attr,
-                                           bias_attr=bias_attr)
+                                           bias_attr=bias_attr,
+                                           data_layout=data_format)
 
-    def _conv_stem_norm(self, inputs, is_test):
+    def _conv_stem_norm(self, inputs, is_test, data_format="NCHW"):
         out_channels = round_filters(32, self._global_params)
         bn = self.conv_bn_layer(inputs, num_filters=out_channels, filter_size=3, stride=2, bn_act=None,
                                 bn_mom=self._bn_mom, padding_type=self.padding_type,
-                                bn_eps=self._bn_eps, name='', conv_name='_conv_stem', bn_name='_bn0')
+                                bn_eps=self._bn_eps, name='', conv_name='_conv_stem', bn_name='_bn0', data_format=data_format)
 
         return bn
 
-    def mb_conv_block(self, inputs, block_args, is_test=False, drop_connect_rate=None, name=None):
+    def mb_conv_block(self, inputs, block_args, is_test=False, drop_connect_rate=None, name=None, data_format="NCHW"):
         # Expansion and Depthwise Convolution
         oup = block_args.input_filters * block_args.expand_ratio  # number of output channels
         has_se = self.use_se and (block_args.se_ratio is not None) and (0 < block_args.se_ratio <= 1)
         id_skip = block_args.id_skip  # skip connection and drop connect
         conv = inputs
         if block_args.expand_ratio != 1:
-            conv = fluid.layers.swish(self._expand_conv_norm(conv, block_args, is_test, name))
+            conv = fluid.layers.swish(self._expand_conv_norm(conv, block_args, is_test, name, data_format=data_format))
 
-        conv = fluid.layers.swish(self._depthwise_conv_norm(conv, block_args, is_test, name))
+        conv = fluid.layers.swish(self._depthwise_conv_norm(conv, block_args, is_test, name, data_format=data_format))
 
         # Squeeze and Excitation
         if has_se:
             num_squeezed_channels = max(1, int(block_args.input_filters * block_args.se_ratio))
-            conv = self.se_block(conv, num_squeezed_channels, oup, name)
+            conv = self.se_block(conv, num_squeezed_channels, oup, name, data_format=data_format)
 
-        conv = self._project_conv_norm(conv, block_args, is_test, name)
+        conv = self._project_conv_norm(conv, block_args, is_test, name, data_format=data_format)
 
         # Skip connection and drop connect
         input_filters, output_filters = block_args.input_filters, block_args.output_filters
@@ -268,32 +274,35 @@ class EfficientNet():
 
         return conv
 
-    def se_block(self, inputs, num_squeezed_channels, oup, name):
+    def se_block(self, inputs, num_squeezed_channels, oup, name, data_format="NCHW"):
         x_squeezed = fluid.layers.pool2d(
             input=inputs,
             pool_type='avg',
             global_pooling=True,
-            use_cudnn=False)
+            use_cudnn=False,
+            data_format=data_format)
         x_squeezed = conv2d(x_squeezed,
                             num_filters=num_squeezed_channels,
                             filter_size=1,
                             use_bias=True,
                             padding_type=self.padding_type,
                             act='swish',
-                            name=name + '_se_reduce')
+                            name=name + '_se_reduce',
+                            data_format=data_format)
         x_squeezed = conv2d(x_squeezed,
                             num_filters=oup,
                             filter_size=1,
                             use_bias=True,
                             padding_type=self.padding_type,
-                            name=name + '_se_expand')
+                            name=name + '_se_expand',
+                            data_format=data_format)
         se_out = inputs * fluid.layers.sigmoid(x_squeezed)
         return se_out
 
-    def extract_features(self, inputs, is_test):
+    def extract_features(self, inputs, is_test, data_format="NCHW"):
         """ Returns output of the final convolution layer """
 
-        conv = fluid.layers.swish(self._conv_stem_norm(inputs, is_test=is_test))
+        conv = fluid.layers.swish(self._conv_stem_norm(inputs, is_test=is_test, data_format=data_format))
 
         block_args_copy = copy.deepcopy(self._blocks_args)
         idx = 0
@@ -321,7 +330,7 @@ class EfficientNet():
             drop_connect_rate = self._global_params.drop_connect_rate
             if drop_connect_rate:
                 drop_connect_rate *= float(idx) / block_size
-            conv = self.mb_conv_block(conv, block_args, is_test, drop_connect_rate, '_blocks.' + str(idx) + '.')
+            conv = self.mb_conv_block(conv, block_args, is_test, drop_connect_rate, '_blocks.' + str(idx) + '.', data_format=data_format)
 
             idx += 1
             if block_args.num_repeat > 1:
@@ -330,7 +339,7 @@ class EfficientNet():
                 drop_connect_rate = self._global_params.drop_connect_rate
                 if drop_connect_rate:
                     drop_connect_rate *= float(idx) / block_size
-                conv = self.mb_conv_block(conv, block_args, is_test, drop_connect_rate, '_blocks.' + str(idx) + '.')
+                conv = self.mb_conv_block(conv, block_args, is_test, drop_connect_rate, '_blocks.' + str(idx) + '.', data_format=data_format)
                 idx += 1
 
         return conv

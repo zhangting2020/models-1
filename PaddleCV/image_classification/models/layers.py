@@ -143,7 +143,8 @@ def conv2d(input,
            use_bias=False,
            padding_type=None,
            initial="normal",
-           use_cudnn=True):
+           use_cudnn=True,
+           data_format="NCHW"):
 
     if padding != 0 and padding_type != None:
         warnings.warn(
@@ -196,7 +197,8 @@ def conv2d(input,
         padding=padding,
         use_cudnn=use_cudnn,
         param_attr=param_attr,
-        bias_attr=bias_attr)
+        bias_attr=bias_attr,
+        data_format=data_format)
 
     if need_crop:
         conv = conv[:, :, 1:, 1:]

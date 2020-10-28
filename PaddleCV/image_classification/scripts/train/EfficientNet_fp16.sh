@@ -1,16 +1,16 @@
 #!/bin/bash -ex
 export GLOG_v=1
-export CUDA_VISIBLE_DEVICES=1
-#export FLAGS_conv_workspace_size_limit=3000 #MB
-export FLAGS_cudnn_exhaustive_search=1
+export CUDA_VISIBLE_DEVICES=0
+export FLAGS_conv_workspace_size_limit=4500 #MB
+export FLAGS_cudnn_exhaustive_search=0
 export FLAGS_cudnn_batchnorm_spatial_persistent=1
 
 DATA_DIR="/ssd3/datasets/ILSVRC2012/"
 
-DATA_FORMAT="NHWC"
-USE_FP16=true #whether to use float16
+DATA_FORMAT="NCHW"
+USE_FP16=false #whether to use float16
 USE_DALI=true
-USE_ADDTO=false
+USE_ADDTO=true
 
 if ${USE_ADDTO} ;then
     export FLAGS_max_inplace_grad_add=8
@@ -43,11 +43,10 @@ python -u train.py \
        --scale_loss=128.0 \
        --use_dynamic_loss_scaling=true \
        --data_format=${DATA_FORMAT} \
-       --fuse_bn_act_ops=false \
-       --fuse_bn_add_act_ops=false \
-       --fuse_elewise_add_act_ops=false \
+       --fuse_bn_act_ops=true \
+       --fuse_bn_add_act_ops=true \
+       --fuse_elewise_add_act_ops=true \
        --enable_addto=${USE_ADDTO} \
-       --use_dali=${USE_DALI}
-       
-#--reader_thread=10 \
-#--reader_buf_size=4000 \
+       --use_dali=${USE_DALI} \
+       --reader_thread=10 \
+       --reader_buf_size=4000 \

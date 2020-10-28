@@ -201,7 +201,10 @@ def conv2d(input,
         data_format=data_format)
 
     if need_crop:
-        conv = conv[:, :, 1:, 1:]
+        if data_format == "NCHW":
+            conv = conv[:, :, 1:, 1:]
+        elif data_format == "NHWC":
+            conv = conv[:, 1:, 1:, :]
 
     if norm is not None:
         conv = norm_layer(input=conv, norm_type=norm, name=name + "_norm")

@@ -210,8 +210,6 @@ class EfficientNet():
     def conv_bn_layer(self, input, filter_size, num_filters, stride=1, num_groups=1, padding_type="SAME", conv_act=None,
                       bn_act='swish', use_cudnn=True, use_bn=True, bn_mom=0.9, bn_eps=1e-05, use_bias=False, name=None,
                       conv_name=None, bn_name=None, data_format="NCHW"):
-        print("conv_bn_layer")
-        print(input)
         conv = conv2d(
             input=input,
             num_filters=num_filters,
@@ -243,7 +241,6 @@ class EfficientNet():
 
     def _conv_stem_norm(self, inputs, is_test, data_format="NCHW"):
         out_channels = round_filters(32, self._global_params)
-        print(inputs)
         bn = self.conv_bn_layer(inputs, num_filters=out_channels, filter_size=3, stride=2, bn_act=None,
                                 bn_mom=self._bn_mom, padding_type=self.padding_type,
                                 bn_eps=self._bn_eps, name='', conv_name='_conv_stem', bn_name='_bn0', data_format=data_format)
@@ -256,8 +253,6 @@ class EfficientNet():
         has_se = self.use_se and (block_args.se_ratio is not None) and (0 < block_args.se_ratio <= 1)
         id_skip = block_args.id_skip  # skip connection and drop connect
         conv = inputs
-        print("=====222222=====")
-        print(conv) 
         if block_args.expand_ratio != 1:
             conv = fluid.layers.swish(self._expand_conv_norm(conv, block_args, is_test, name, data_format=data_format))
 
@@ -308,7 +303,6 @@ class EfficientNet():
         """ Returns output of the final convolution layer """
 
         conv = fluid.layers.swish(self._conv_stem_norm(inputs, is_test=is_test, data_format=data_format))
-        print(conv)
 
         block_args_copy = copy.deepcopy(self._blocks_args)
         idx = 0

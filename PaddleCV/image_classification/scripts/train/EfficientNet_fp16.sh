@@ -1,14 +1,14 @@
 #!/bin/bash -ex
 export GLOG_v=1
-export CUDA_VISIBLE_DEVICES=0
-export FLAGS_conv_workspace_size_limit=4500 #MB
-export FLAGS_cudnn_exhaustive_search=0
+export CUDA_VISIBLE_DEVICES=4
+#export FLAGS_conv_workspace_size_limit=4000 #MB
+#export FLAGS_cudnn_exhaustive_search=1
 export FLAGS_cudnn_batchnorm_spatial_persistent=1
 
 DATA_DIR="/ssd3/datasets/ILSVRC2012/"
 
-DATA_FORMAT="NCHW"
-USE_FP16=false #whether to use float16
+DATA_FORMAT="NHWC"
+USE_FP16=true #whether to use float16
 USE_DALI=true
 USE_ADDTO=true
 
@@ -24,7 +24,7 @@ python -u train.py \
        --model=EfficientNet \
        --data_dir=${DATA_DIR} \
        --batch_size=128 \
-       --image_shape 3 224 224 \
+       --image_shape 4 224 224 \
        --test_batch_size=128 \
        --resize_short_size=256 \
        --model_save_dir=output/ \
@@ -47,6 +47,4 @@ python -u train.py \
        --fuse_bn_add_act_ops=true \
        --fuse_elewise_add_act_ops=true \
        --enable_addto=${USE_ADDTO} \
-       --use_dali=${USE_DALI} \
-       --reader_thread=10 \
-       --reader_buf_size=4000 \
+       --use_dali=${USE_DALI} 

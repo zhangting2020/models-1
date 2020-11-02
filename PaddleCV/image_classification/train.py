@@ -91,8 +91,10 @@ def build_program(is_train, main_prog, startup_prog, args):
                 loss_out.append(global_lr)
 
                 if args.use_fp16:
+                    amp_list = fluid.contrib.mixed_precision.AutoMixedPrecisionLists(custom_white_list={"swish", "depthwise_conv2d"})
                     optimizer = fluid.contrib.mixed_precision.decorate(
                         optimizer,
+                        amp_lists=amp_list,
                         init_loss_scaling=args.scale_loss,
                         use_dynamic_loss_scaling=args.use_dynamic_loss_scaling)
 
@@ -220,8 +222,8 @@ def train(args):
     if args.use_dali:
         import dali
         train_iter = dali.train(settings=args)
-        if trainer_id == 0:
-            test_iter = dali.val(settings=args)
+        #if trainer_id == 0:
+        #    test_iter = dali.val(settings=args)
     else:
         imagenet_reader = reader.ImageNetReader(0 if num_trainers > 1 else None)
         train_reader = imagenet_reader.train(settings=args)

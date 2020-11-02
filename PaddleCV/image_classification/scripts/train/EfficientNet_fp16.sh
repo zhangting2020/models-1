@@ -1,11 +1,12 @@
 #!/bin/bash -ex
 export GLOG_v=1
+#export GLOG_vmodule=operator=3
 export CUDA_VISIBLE_DEVICES=4
-#export FLAGS_conv_workspace_size_limit=4000 #MB
-#export FLAGS_cudnn_exhaustive_search=1
+export FLAGS_conv_workspace_size_limit=4000 #MB
+export FLAGS_cudnn_exhaustive_search=0
 export FLAGS_cudnn_batchnorm_spatial_persistent=1
 
-DATA_DIR="/ssd3/datasets/ILSVRC2012/"
+DATA_DIR="/data/ILSVRC2012/"
 
 DATA_FORMAT="NHWC"
 USE_FP16=true #whether to use float16

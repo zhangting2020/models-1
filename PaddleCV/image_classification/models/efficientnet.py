@@ -131,7 +131,7 @@ class EfficientNet():
                                   bn_name='_bn1',
                                   data_format=data_format)
 
-        pool = fluid.layers.pool2d(input=conv, pool_type='avg', global_pooling=True, use_cudnn=False, data_format=data_format)
+        pool = fluid.layers.pool2d(input=conv, pool_type='avg', global_pooling=True, use_cudnn=True, data_format=data_format)
 
         if self._global_params.dropout_rate:
             pool = fluid.layers.dropout(pool, self._global_params.dropout_rate, dropout_implementation='upscale_in_train')
@@ -185,7 +185,7 @@ class EfficientNet():
                                   bn_mom=self._bn_mom,
                                   bn_eps=self._bn_eps,
                                   name=name,
-                                  use_cudnn=False,
+                                  use_cudnn=True,
                                   conv_name=name + '_depthwise_conv',
                                   bn_name='_bn1',
                                   data_format=data_format)
@@ -279,7 +279,7 @@ class EfficientNet():
             input=inputs,
             pool_type='avg',
             global_pooling=True,
-            use_cudnn=False,
+            use_cudnn=True,
             data_format=data_format)
         x_squeezed = conv2d(x_squeezed,
                             num_filters=num_squeezed_channels,
